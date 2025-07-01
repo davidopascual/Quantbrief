@@ -8,7 +8,7 @@ from db import Session, Summary
 import os 
 from dotenv import load_dotenv
 
-
+load_dotenv()
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY')
 FINNHUB_COMPANY_NEWS_URL = os.getenv('FINNHUB_COMPANY_NEWS_URL')
 FINNHUB_CRYPTO_NEWS_URL = os.getenv('FINNHUB_CRYPTO_NEWS_URL')
@@ -133,7 +133,7 @@ def view_history_sqlalchemy():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Crypto & Stock News Summarizer')
+    parser = argparse.ArgumentParser(description='QuantBrief: AI Financial News Summarizer')
     parser.add_argument('--ticker', type=str, help='Stock ticker symbol')
     parser.add_argument('--crypto', type=str, help='Cryptocurrency name')
     parser.add_argument('--history', action='store_true', help='View summary history')
