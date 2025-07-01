@@ -94,6 +94,126 @@ def fetch_stock_price(ticker):
 
 def summarize(texts):
    # Use Gemini to summarize
-   return 
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-2.5-flash')
+
+    if isinstance(texts, str):
+        texts = [texts]
+
+    prompt = """
+    You are a financial news summarizer. Given the following news articles, provide a concise summary, overall sentiment (Positive/Negative/Neutral), and a suggested action for a retail trader. Format:
+    Summary: ...
+    Sentiment: ...
+    Actions: ...
+    
+    Articles: 
+    """
+
+    for i, t in enumerate(texts):
+        prompt += f"Article {i+1}: {t}\n"
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return f"Summary unavailable. Error: {e}"
+
+def main():
+    parser = argparse.ArgumentParser(description="Crypto & Stock News Summarizer")
+    parser.add_argument('--ticker', type=str, help='Stock ticker symbol')
+    parser.add_argument('--crypto', type=str, help ='Cryptocurrency name')
+    parser.add_argument('--history', action='store_true', help='View summary history')
+    args = parser.parse_args()
+
+    if args.history:
+        #replace with real db later
+        view_history()
+        return
+    
+    elif args.ticker:
+        print(colored("Fetching news...", 'cyan'))
+        news = fetch_news(args.ticker, is_crypto = False)
+
+        print(colored("Fetching price...", 'cyan'))
+        price = fetch_stock_price(args.ticker)
+
+        if not news:
+            print(colored(f"No news found for {args.ticker}.", "yellow"))
+            return
+        
+        descriptions = []
+        for articles in news:
+            summary_text = article.get('summary', '')
+            if summary_text:
+                descriptions.append(summary_text)
+        
+        print(colored(f"Number of articles being summarized: {len(descriptions)}", 'magenta'))
+
+        if descriptions:
+            print(colored("Summarizing, please wait...", 'yellow'))
+            summary = summarize(descriptions)
+        else:
+            summary = summarize(f"No news summaries found for {args.ticker}. Price is ${price}.")
+
+        if "positive" in summary.lower():
+            sentiment = "Postiive"
+        
+        elif "negative" in summary.lower():
+            sentiment = "Negative"
+        else:
+            sentiment = "Neutral"
+
+        #replace with real db summary
+        store_summary(args.ticker, summary, price, sentiment)
+
+        color = 'green' if sentiment == "Positive" else 'red' if sentiment == "Negative" else 'yellow'
+        print(colored(f"[{args.ticker}] {sentiment}\nSummary: {summary}\nPrice: ${price}", color))
+    
+    elif args.crypto:
+        print(colored("Fetching price...", 'cyan'))
+        price = fetch_crypto_price(args.crypto)
+
+        print(colored("Fetching news...", 'cyan'))
+        news = fetch_news(args.crypto, is_crypto=True)
+
+        if not news:
+            print(colored(f"No news found for {args.crypto}.", "yellow"))
+            return
+
+        descriptions = []
+        for articles in news:
+            summary_text = article.get('summary', '')
+            if summary_text:
+                descriptions.append(summary_text)
+
+        print(colored(f"Number of articles being summarized: {len(descriptions)}", 'magenta'))
+
+        if descriptions:
+            print(colored("Summarizing, please wait...", 'yellow'))
+            summary = summarize(descriptions)
+        else:
+            summary = summarize(f"No news summaries found for {args.crypto}. Price is ${price}.")
+
+        if "positive" in summary.lower():
+            sentiment = "Positive"
+
+        elif "negative" in summary.lower():
+            sentiment = "Negative"
+
+        else:
+            sentiment = "Neutral"
+
+        #replace with real db summary
+        store_summary(args.crypto, summary, price, sentiment)
+    
+        color = 'green' if sentiment == "Positive" else 'red' if sentiment == "Negative" else 'yellow'
+        print(colored(f"[{args.crypto}] {sentiment}\nSummary: {summary}\nPrice: ${price}", color))
+
+
+
+
+
+
+ 
 
 
