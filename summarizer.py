@@ -15,9 +15,18 @@ FINNHUB_CRYPTO_NEWS_URL = os.getenv('FINNHUB_CRYPTO_NEWS_URL')
 COINGECKO_API_URL = os.getenv('COINGECKO_API_URL')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
+def get_asset_name(ticker):
+    #Converts the ticker symbol to the actual stock company name
+    try:
+        info = yf.Ticker(ticker).info
+        return info.get('shortName', '').split()[0].lower()
+    except Exception:
+        return ''
 
 def fetch_news(ticker, is_crypto=False):
     ticker_lower = ticker.lower()
+    asset_name = get_asset_name(ticker)
+
     if is_crypto:
         params = {
             'category': 'crypto',
@@ -32,17 +41,21 @@ def fetch_news(ticker, is_crypto=False):
         data = response.json()
         relevant_articles = []
 
+        #Check if ticker symbol or asset name in either headline or summary of each article
         for article in data:
-            combined_text = article.get('headline', '').lower() + article.get('summary', '').lower()
-            if ticker_lower in combined_text:
-                if (article.get('headline', '').lower().find(ticker_lower) < 100 or
-                        article.get('summary', '').lower().find(ticker_lower) < 100):
-                    relevant_articles.append(article)
+            headline = article.get('headline', '').lower()
+            summary = article.get('summary', '').lower()
+            
+            if (ticker_lower in headline or asset_name in headline or
+                ticker_lower in summary or asset_name in summary):
+                relevant_articles.append(article)
+
             if len(relevant_articles) == 3:
                 break
 
         return relevant_articles
 
+        #Get news from the past 7 days
     else:
         today = datetime.now(timezone.utc).date()
         week_ago = today - timedelta(days=7)
@@ -64,11 +77,13 @@ def fetch_news(ticker, is_crypto=False):
         relevant_articles = []
 
         for article in data:
-            combined_text = article.get('headline', '').lower() + article.get('summary', '').lower()
-            if ticker_lower in combined_text:
-                if (article.get('headline', '').lower().find(ticker_lower) < 100 or
-                        article.get('summary', '').lower().find(ticker_lower) < 100):
-                    relevant_articles.append(article)
+            headline = article.get('headline', '').lower()
+            summary = article.get('summary', '').lower()
+            
+            if (ticker_lower in headline or asset_name in headline or
+                ticker_lower in summary or asset_name in summary):
+                relevant_articles.append(article)
+                
             if len(relevant_articles) == 3:
                 break
 
