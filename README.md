@@ -36,35 +36,39 @@ Project is created with:
 
 ## Setup
 
-1. Clone the repository
+1. **Clone the repository**
 
-2. Create and activate a virtual enviroment(avoids version conflicts):
-'''
+2. **Create and activate a virtual enviroment(avoids version conflicts):**
+
+```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-'''
+```
 
-3. Install dependencies:
-'''
+3. **Install dependencies:**
+
+```bash
 pip install -r requirements.txt
-'''
+```
 
-4. Create a .env file in the root directory and fill FinnHub and Gemini portion with your API information:
-'''
+4. **Create a .env file in the root directory and fill FinnHub and Gemini portion with your API information:**
+
+```bash
 FINNHUB_API_KEY=your_finnhub_key
 GEMINI_API_KEY=your_gemini_key
 FINNHUB_COMPANY_NEWS_URL=https://finnhub.io/api/v1/company-news
 FINNHUB_CRYPTO_NEWS_URL=https://finnhub.io/api/v1/news
 COINGECKO_API_URL=https://api.coingecko.com/api/v3/simple/price
-'''
+```
 
 ---
 
 ## Usage
-'''
+
+```bash
 Get Stock Summary: python3 summarizer.py --ticker MSFT
 
 Get Crypto Summary: python3 summarizer.py --crypto BTC
 
 View Summary History: python3 summarizer.py --history
-'''
+```
