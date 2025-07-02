@@ -65,10 +65,8 @@ COINGECKO_API_URL=https://api.coingecko.com/api/v3/simple/price
 
 ## Usage
 
-```bash
-Get Stock Summary: python3 summarizer.py --ticker MSFT
+Get Stock Summary: ```bash python3 summarizer.py --ticker MSFT ```
 
-Get Crypto Summary: python3 summarizer.py --crypto BTC
+Get Crypto Summary: ```bash python3 summarizer.py --crypto BTC ```
 
-View Summary History: python3 summarizer.py --history
-```
+View Summary History: ```bash python3 summarizer.py --history```
