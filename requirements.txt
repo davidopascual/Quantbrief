@@ -1,0 +1,6 @@
+yfinance
+requests
+google-generativeai
+python-dotenv
+SQLAlchemy
+termcolor
