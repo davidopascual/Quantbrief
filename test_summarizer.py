@@ -1,7 +1,10 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import pandas as pd  # Needed for DataFrame mock
-from summarizer import get_asset_name, fetch_stock_price, fetch_crypto_price, fetch_news
+
+from summarizer import get_asset_name, fetch_stock_price, \
+    fetch_crypto_price, fetch_news
+
 
 class TestSummarizer(unittest.TestCase):
     @patch('summarizer.yf.Ticker')
@@ -22,14 +25,13 @@ class TestSummarizer(unittest.TestCase):
     @patch('summarizer.requests.get')
     def test_fetch_crypto_price(self, mock_get):
         mock_get.return_value.json.side_effect = [
-    [   # This mocks the CoinGecko coin list
-        {"id": "bitcoin", "symbol": "btc", "name": "Bitcoin"},
-        {"id": "ethereum", "symbol": "eth", "name": "Ethereum"}
-    ],
-    {   # This mocks the actual price response
-        "bitcoin": {"usd": 34000.50}
-    }
-]
+            # This mocks the CoinGecko coin list
+            {"id": "bitcoin", "symbol": "btc", "name": "Bitcoin"},
+            {"id": "ethereum", "symbol": "eth", "name": "Ethereum"}
+        ], \
+            {   # This mocks the actual price response
+                "bitcoin": {"usd": 34000.50}
+            }
         price = fetch_crypto_price('bitcoin')
         self.assertEqual(price, 34000.50)
 
@@ -52,7 +54,6 @@ class TestSummarizer(unittest.TestCase):
         # Only the first article should match 'ETH' or 'ethereum'
         self.assertEqual(len(news), 1)
 
+
 if __name__ == '__main__':
     unittest.main()
-
-    
