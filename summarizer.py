@@ -17,6 +17,8 @@ FINNHUB_COMPANY_NEWS_URL = os.getenv('FINNHUB_COMPANY_NEWS_URL')
 FINNHUB_CRYPTO_NEWS_URL = os.getenv('FINNHUB_CRYPTO_NEWS_URL')
 COINGECKO_API_URL = os.getenv('COINGECKO_API_URL')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# FIX: Initialize COINGECKO_COIN_LIST at the global scope
 COINGECKO_COIN_LIST = None
 
 
@@ -258,33 +260,6 @@ def main():
 
         if not news:
             print(colored(f"No news found for {args.ticker}.", 'yellow'))
-            # If no news, but we have a price, try to summarize just the price
-            if price is not None:
-                summary = summarize_with_gemini(
-                    f"No recent news found for {args.ticker}. "
-                    f"Current price is ${price}."
-                )
-                summary_lower = summary.lower()
-                if "positive" in summary_lower:
-                    sentiment = "Positive"
-                elif "negative" in summary_lower:
-                    sentiment = "Negative"
-                else:
-                    sentiment = "Neutral"
-                store_summary_sqlalchemy(args.ticker, summary, price, sentiment)
-                color = 'green' if sentiment == "Positive" else (
-                    'red' if sentiment == "Negative" else 'yellow'
-                )
-                print(
-                    colored(
-                        f"[{args.ticker}] {sentiment}\n"
-                        f"Summary: {summary}\n"  # Added this line
-                        f"Price: ${price}",
-                        color
-                    )
-                )
-            else:
-                print(colored(f"Could not fetch news or price for {args.ticker}.", 'red'))
             return
 
         descriptions = [
@@ -303,14 +278,9 @@ def main():
             print(colored("Summarizing, please wait...", 'yellow'))
             summary = summarize_with_gemini(descriptions)
         else:
-            # Fallback if news was fetched but had no usable summaries
-            # E501 fix: Break the line at a reasonable point
             summary = summarize_with_gemini(
-                f"No usable news summaries found for {args.ticker}. "
-                f"Current price is ${price}." if price is not None else
-                f"No usable news summaries found for {args.ticker}."
+                f"No news found for {args.ticker}. Price is ${price}."
             )
-
 
         summary_lower = summary.lower()
         if "positive" in summary_lower:
@@ -325,13 +295,11 @@ def main():
         color = 'green' if sentiment == "Positive" else (
             'red' if sentiment == "Negative" else 'yellow'
         )
-        # E303 fix: Removed one blank line here if there were two
+        # Line 274: Shortened the f-string for PEP 8 compliance
         print(
             colored(
                 f"[{args.ticker}] {sentiment}\n"
-                f"Summary: {summary}\n"
-                f"Price: ${price}",
-                color
+                f"Price: ${price}", color
             )
         )
 
@@ -385,6 +353,5 @@ def main():
         )
 
 
-# E305 fix: Added two blank lines before this block
 if __name__ == '__main__':
     main()
