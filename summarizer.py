@@ -17,7 +17,7 @@ FINNHUB_COMPANY_NEWS_URL = os.getenv('FINNHUB_COMPANY_NEWS_URL')
 FINNHUB_CRYPTO_NEWS_URL = os.getenv('FINNHUB_CRYPTO_NEWS_URL')
 COINGECKO_API_URL = os.getenv('COINGECKO_API_URL')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
+COINGECKO_COIN_LIST = None
 
 def get_asset_name(ticker):
     try:
@@ -294,9 +294,10 @@ def main():
         )
         print(
             colored(
-                f"[{args.ticker}] {sentiment}\nSummary:
-                {summary}\nPrice: ${price}",
+                f"[{args.ticker}] {sentiment}\n"
+                f"Price: ${price}\n",
                 color
+
             )
         )
 
@@ -342,8 +343,9 @@ def main():
         )
         print(
             colored(
-                f"[{args.crypto}] {sentiment}\nSummary:
-                {summary}\nPrice: ${price}",
+                f"[{args.crypto}] {sentiment}\n"
+                f"Summary: {summary}\n"
+                f"Price: ${price}",
                 color
             )
         )
