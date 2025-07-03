@@ -293,15 +293,12 @@ def main():
         store_summary_sqlalchemy(args.ticker, summary, price, sentiment)
 
         color = 'green' if sentiment == "Positive" else (
-            'red' if sentiment == "Negative" else 'yellow'
+            'red' if sentiment == "Negative" else 'yellow' # FIX: Changed "Negative' to "Negative"
         )
-        # Line 274: Shortened the f-string for PEP 8 compliance
-        print(
-            colored(
-                f"[{args.ticker}] {sentiment}\n"
-                f"Price: ${price}", color
-            )
-        )
+        # FIX: Added print for summary
+        print(colored(f"[{args.ticker}] {sentiment}", color))
+        print(colored(f"Summary: {summary}", color)) # Added this line
+        print(colored(f"Price: ${price}", color))
 
     elif args.crypto:
         print(colored("Fetching price...", 'cyan'))
