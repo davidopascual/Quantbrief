@@ -23,6 +23,7 @@ class TestSummarizer(unittest.TestCase):
         self.assertEqual(price, 123.45)
 
     @patch('summarizer.requests.get')
+    @patch('summarizer.COINGECKO_COIN_LIST', None)
     def test_fetch_crypto_price(self, mock_get):
         mock_get.return_value.json.side_effect = [
             # This mocks the CoinGecko coin list
