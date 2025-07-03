@@ -5,7 +5,7 @@ import requests
 import google.generativeai as genai
 from datetime import datetime, timedelta, timezone
 from db import Session, Summary
-import os 
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,9 +15,19 @@ FINNHUB_CRYPTO_NEWS_URL = os.getenv('FINNHUB_CRYPTO_NEWS_URL')
 COINGECKO_API_URL = os.getenv('COINGECKO_API_URL')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
+COINGECKO_COIN_LIST = None  # Will be populated on first use
+
+def get_asset_name(ticker):
+    try:
+        info = yf.Ticker(ticker).info
+        return info.get('shortName', '').split()[0].lower()
+    except Exception:
+        return ''
 
 def fetch_news(ticker, is_crypto=False):
     ticker_lower = ticker.lower()
+    asset_name = get_asset_name(ticker)
+
     if is_crypto:
         params = {
             'category': 'crypto',
@@ -33,11 +43,11 @@ def fetch_news(ticker, is_crypto=False):
         relevant_articles = []
 
         for article in data:
-            combined_text = article.get('headline', '').lower() + article.get('summary', '').lower()
-            if ticker_lower in combined_text:
-                if (article.get('headline', '').lower().find(ticker_lower) < 100 or
-                        article.get('summary', '').lower().find(ticker_lower) < 100):
-                    relevant_articles.append(article)
+            headline = article.get('headline', '').lower()
+            summary = article.get('summary', '').lower()
+            if (ticker_lower in headline or asset_name in headline or
+                ticker_lower in summary or asset_name in summary):
+                relevant_articles.append(article)
             if len(relevant_articles) == 3:
                 break
 
@@ -64,26 +74,54 @@ def fetch_news(ticker, is_crypto=False):
         relevant_articles = []
 
         for article in data:
-            combined_text = article.get('headline', '').lower() + article.get('summary', '').lower()
-            if ticker_lower in combined_text:
-                if (article.get('headline', '').lower().find(ticker_lower) < 100 or
-                        article.get('summary', '').lower().find(ticker_lower) < 100):
-                    relevant_articles.append(article)
+            headline = article.get('headline', '').lower()
+            summary = article.get('summary', '').lower()
+            if (ticker_lower in headline or asset_name in headline or
+                ticker_lower in summary or asset_name in summary):
+                relevant_articles.append(article)
             if len(relevant_articles) == 3:
                 break
 
         return relevant_articles
 
+def get_coingecko_id(crypto):
+    global COINGECKO_COIN_LIST
+    if COINGECKO_COIN_LIST is None:
+        try:
+            print(colored("Fetching crypto ID list from CoinGecko...", "cyan"))
+            resp = requests.get("https://api.coingecko.com/api/v3/coins/list")
+            COINGECKO_COIN_LIST = resp.json()
+        except Exception as e:
+            print(colored(f"Error fetching CoinGecko coin list: {e}", "red"))
+            return None
+
+    crypto_lower = crypto.lower()
+    for coin in COINGECKO_COIN_LIST:
+        if coin["id"].lower() == crypto_lower or coin["symbol"].lower() == crypto_lower or coin["name"].lower() == crypto_lower:
+            return coin["id"]
+    return None
 
 def fetch_crypto_price(crypto):
-    response = requests.get(COINGECKO_API_URL, params={'ids': crypto, 'vs_currencies': 'usd'})
-    return response.json().get(crypto, {}).get('usd', 'N/A')
+    crypto_id = get_coingecko_id(crypto)
+    if not crypto_id:
+        print(colored(f"Unable to find matching CoinGecko ID for '{crypto}'", 'red'))
+        return None
 
+    try:
+        response = requests.get(COINGECKO_API_URL, params={'ids': crypto_id, 'vs_currencies': 'usd'})
+        data = response.json()
+        price = data.get(crypto_id, {}).get('usd')
+        return float(price) if price is not None else None
+    except Exception as e:
+        print(colored(f"Error fetching crypto price for {crypto}: {e}", 'red'))
+        return None
 
 def fetch_stock_price(ticker):
-    stock = yf.Ticker(ticker)
-    return stock.history(period='1d')['Close'].iloc[-1]
-
+    try:
+        stock = yf.Ticker(ticker)
+        return float(stock.history(period='1d')['Close'].iloc[-1])
+    except Exception:
+        return None
 
 def summarize_with_gemini(texts):
     genai.configure(api_key=GEMINI_API_KEY)
@@ -110,13 +148,21 @@ Articles:
     except Exception as e:
         return f"Summary unavailable. Error: {e}"
 
-
 def store_summary_sqlalchemy(ticker, summary, price, sentiment):
     session = Session()
+    try:
+        price_value = float(price)
+    except (TypeError, ValueError):
+        price_value = None
+
+    if price_value is None:
+        print(colored("Skipping database insert due to missing price.", "red"))
+        return
+
     new_summary = Summary(
         ticker=ticker,
         summary=summary,
-        price=price,
+        price=price_value,
         sentiment=sentiment,
         timestamp=datetime.now(timezone.utc)
     )
@@ -124,13 +170,11 @@ def store_summary_sqlalchemy(ticker, summary, price, sentiment):
     session.commit()
     session.close()
 
-
 def view_history_sqlalchemy():
     session = Session()
     records = session.query(Summary).order_by(Summary.timestamp.desc()).all()
     session.close()
     return records
-
 
 def main():
     parser = argparse.ArgumentParser(description='QuantBrief: AI Financial News Summarizer')
@@ -160,11 +204,7 @@ def main():
             print(colored(f"No news found for {args.ticker}.", 'yellow'))
             return
 
-        descriptions = []
-        for article in news:
-            summary_text = article.get('summary', '')
-            if summary_text:
-                descriptions.append(summary_text)
+        descriptions = [article.get('summary', '') for article in news if article.get('summary', '')]
 
         print(colored(f"Number of articles being summarized: {len(descriptions)}", 'magenta'))
 
@@ -174,9 +214,10 @@ def main():
         else:
             summary = summarize_with_gemini(f"No news summaries found for {args.ticker}. Price is ${price}.")
 
-        if "Positive" in summary:
+        summary_lower = summary.lower()
+        if "positive" in summary_lower:
             sentiment = "Positive"
-        elif "Negative" in summary:
+        elif "negative" in summary_lower:
             sentiment = "Negative"
         else:
             sentiment = "Neutral"
@@ -193,11 +234,7 @@ def main():
         print(colored("Fetching news...", 'cyan'))
         news = fetch_news(args.crypto, is_crypto=True)
 
-        descriptions = []
-        for article in news:
-            summary_text = article.get('summary', '')
-            if summary_text:
-                descriptions.append(summary_text)
+        descriptions = [article.get('summary', '') for article in news if article.get('summary', '')]
 
         print(colored(f"Number of articles being summarized: {len(descriptions)}", 'magenta'))
 
@@ -219,7 +256,6 @@ def main():
 
         color = 'green' if sentiment == "Positive" else ('red' if sentiment == "Negative" else 'yellow')
         print(colored(f"[{args.crypto}] {sentiment}\nSummary: {summary}\nPrice: ${price}", color))
-
 
 if __name__ == '__main__':
     main()
