@@ -258,6 +258,33 @@ def main():
 
         if not news:
             print(colored(f"No news found for {args.ticker}.", 'yellow'))
+            # If no news, but we have a price, try to summarize just the price
+            if price is not None:
+                summary = summarize_with_gemini(
+                    f"No recent news found for {args.ticker}. "
+                    f"Current price is ${price}."
+                )
+                summary_lower = summary.lower()
+                if "positive" in summary_lower:
+                    sentiment = "Positive"
+                elif "negative" in summary_lower:
+                    sentiment = "Negative"
+                else:
+                    sentiment = "Neutral"
+                store_summary_sqlalchemy(args.ticker, summary, price, sentiment)
+                color = 'green' if sentiment == "Positive" else (
+                    'red' if sentiment == "Negative" else 'yellow'
+                )
+                print(
+                    colored(
+                        f"[{args.ticker}] {sentiment}\n"
+                        f"Summary: {summary}\n"  # Added this line
+                        f"Price: ${price}",
+                        color
+                    )
+                )
+            else:
+                print(colored(f"Could not fetch news or price for {args.ticker}.", 'red'))
             return
 
         descriptions = [
@@ -276,9 +303,13 @@ def main():
             print(colored("Summarizing, please wait...", 'yellow'))
             summary = summarize_with_gemini(descriptions)
         else:
+            # Fallback if news was fetched but had no usable summaries
             summary = summarize_with_gemini(
-                f"No news found for {args.ticker}. Price is ${price}."
+                f"No usable news summaries found for {args.ticker}. "
+                f"Current price is ${price}." if price is not None else
+                f"No usable news summaries found for {args.ticker}."
             )
+
 
         summary_lower = summary.lower()
         if "positive" in summary_lower:
@@ -296,9 +327,9 @@ def main():
         print(
             colored(
                 f"[{args.ticker}] {sentiment}\n"
-                f"Price: ${price}\n",
+                f"Summary: {summary}\n"  # <--- This line was missing!
+                f"Price: ${price}",
                 color
-
             )
         )
 
@@ -350,7 +381,5 @@ def main():
                 color
             )
         )
-
-
 if __name__ == '__main__':
     main()
