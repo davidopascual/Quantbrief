@@ -19,6 +19,7 @@ COINGECKO_API_URL = os.getenv('COINGECKO_API_URL')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 COINGECKO_COIN_LIST = None
 
+
 def get_asset_name(ticker):
     try:
         info = yf.Ticker(ticker).info
