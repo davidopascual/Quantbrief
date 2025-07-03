@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import pandas as pd  # Needed for DataFrame mock
 from summarizer import get_asset_name, fetch_stock_price, fetch_crypto_price, fetch_news
 
 class TestSummarizer(unittest.TestCase):
-    #Fake Data via patch and magicmok
     @patch('summarizer.yf.Ticker')
     def test_get_asset_name(self, mock_ticker):
         mock_ticker.return_value.info = {'shortName': 'Apple Inc.'}
@@ -13,7 +13,8 @@ class TestSummarizer(unittest.TestCase):
     @patch('summarizer.yf.Ticker')
     def test_fetch_stock_price(self, mock_ticker):
         mock_instance = MagicMock()
-        mock_instance.history.return_value = {'Close': [123.45]}
+        # Return a DataFrame with a 'Close' column
+        mock_instance.history.return_value = pd.DataFrame({'Close': [123.45]})
         mock_ticker.return_value = mock_instance
         price = fetch_stock_price('AAPL')
         self.assertEqual(price, 123.45)
@@ -31,16 +32,19 @@ class TestSummarizer(unittest.TestCase):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = [
             {
-                'headline': 'Ethereum upgrade released', #Mock data
-                'summary': 'ETH 2.0 brings more scalability.', #Mock data
+                'headline': 'Ethereum upgrade released',
+                'summary': 'ETH 2.0 brings more scalability.',
             },
             {
-                'headline': 'Bitcoin spikes again', #Mock data
-                'summary': 'But this is unrelated to ETH.', #Mock data
+                'headline': 'Bitcoin spikes again',
+                'summary': 'BTC rises on ETF speculation.',
             }
         ]
         news = fetch_news('ETH', is_crypto=True)
-        self.assertEqual(len(news), 1)  #1 article situation
+        # Only the first article should match 'ETH' or 'ethereum'
+        self.assertEqual(len(news), 1)
 
 if __name__ == '__main__':
     unittest.main()
+
+    
