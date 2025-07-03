@@ -304,6 +304,7 @@ def main():
             summary = summarize_with_gemini(descriptions)
         else:
             # Fallback if news was fetched but had no usable summaries
+            # E501 fix: Break the line at a reasonable point
             summary = summarize_with_gemini(
                 f"No usable news summaries found for {args.ticker}. "
                 f"Current price is ${price}." if price is not None else
@@ -324,10 +325,11 @@ def main():
         color = 'green' if sentiment == "Positive" else (
             'red' if sentiment == "Negative" else 'yellow'
         )
+        # E303 fix: Removed one blank line here if there were two
         print(
             colored(
                 f"[{args.ticker}] {sentiment}\n"
-                f"Summary: {summary}\n"  # <--- This line was missing!
+                f"Summary: {summary}\n"
                 f"Price: ${price}",
                 color
             )
@@ -381,5 +383,8 @@ def main():
                 color
             )
         )
+
+
+# E305 fix: Added two blank lines before this block
 if __name__ == '__main__':
     main()
